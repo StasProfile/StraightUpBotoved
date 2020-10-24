@@ -1,8 +1,6 @@
+require('dotenv').config();
 const Discord = require('discord.js');
-const { connect } = require('http2');
-const { brotliCompressSync } = require('zlib');
 const ytdl = require('ytdl-core');
-const { on } = require('process');
 const client = new Discord.Client();
 
 
@@ -133,4 +131,4 @@ client.on('message',async msg => {
     }
 })
 
-client.login('NzY4ODc5ODI3MTIwOTQ3MjIx.X5G5Iw.8sj6C-gf81JN9Hoh_OuICZ8jTgs');
+client.login(process.env.TOKEN);
