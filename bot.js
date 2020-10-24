@@ -7,16 +7,16 @@ const client = new Discord.Client();
 
 async function say(path, voiceChannel, vol = 1, bit = 96) {
     const connection = await voiceChannel.join();
-    setTimeout( () => {
+    setTimeout(() => {
         const dispatcher = connection.play(path, {
             volume: vol,
             bitrate: bit,
          });
-        dispatcher.on('finish', () => {
+         dispatcher.on('finish', () => {
             dispatcher.destroy();
            voiceChannel.leave();
        });
-    },500);
+    }, 500);
 }
 
 client.on('ready', () => {
@@ -29,7 +29,7 @@ client.on('message',async msg => {
     }
 
     if (msg.content === 'BoxHelp') {
-        msg.reply('BoxConnect\nBoxDisconnect\nStraightUp\nDope\nItsLit\nLaFlame\nТВАРЬ\nДобро\n345\nминус три\nгучи\n+p{youtube video link}\n       -pause\n       -resume\n       -stop');
+        msg.reply('BoxConnect\nBoxDisconnect\nStraightUp\nDope\nItsLit\nLaFlame\nТВАРЬ\nДобро\n345\nминусТри\nгучи\n+p{youtube video link}\n       -pause\n       -resume\n       -stop');
     }
 
     if (!msg.guild) return;
@@ -55,11 +55,16 @@ client.on('message',async msg => {
         'ТВАРЬ': 'ТВАРЬ.mp3',
         'Добро': 'Добро.m4a',
         '345': '345.mp3',
-        'минус три': 'минус три.m4a',
+        'минусТри': 'минус три.m4a',
         'гучи': 'гучи.mp3',
      }
-     if (messages.hasOwnProperty(msg.content)){
-        say(`audio/${messages[msg.content]}`, msg.member.voice.channel);
+
+     const args = msg.content.replace(/ +/g, ' ').trim().split(' ');
+     
+     if (messages.hasOwnProperty(args[0])){
+        let volume = args[args.indexOf('-v') + 1];
+        volume = Number.parseFloat(volume) || 1;
+        say(`audio/${messages[args[0]]}`, msg.member.voice.channel, volume);
      }
 
     if (msg.content.substr(0,2) === '!p' || msg.content.substr(0,3) === ';;p' || msg.content.substr(0,5) === '!play' || msg.content.substr(0,6) === ';;play') {
