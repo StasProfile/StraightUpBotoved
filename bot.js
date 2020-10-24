@@ -29,7 +29,7 @@ client.on('message',async msg => {
     }
 
     if (msg.content === 'BoxHelp') {
-        msg.reply('BoxConnect\nBoxDisconnect\nStraightUp\nDope\nItsLit\nLaFlame\nТВАРЬ\nДобро\nгадза\nминусТри\nгучи\n+p{youtube video link}\n       -pause\n       -resume\n       -stop');
+        msg.reply('BoxConnect\nBoxDisconnect\nStraightUp\nDope\nItsLit\nLaFlame\nТВАРЬ\nДобро\nгадза\nминусТри\nгучи\nбарбарики\nкриминал\nбасы\n+p{youtube video link}\n       -pause\n       -resume\n       -stop');
     }
 
     if (!msg.guild) return;
@@ -57,6 +57,10 @@ client.on('message',async msg => {
         'гадза': '345.mp3',
         'минусТри': 'минус три.m4a',
         'гучи': 'гучи.mp3',
+        'барбарики': 'барбарики.mp3',
+        'криминал': 'криминал.m4a',
+        'басы': 'басы.mp3',
+        'ашотик': 'ашотик.m4a',
      }
 
      const args = msg.content.replace(/ +/g, ' ').trim().split(' ');
@@ -109,4 +113,5 @@ client.on('message',async msg => {
         }
     }
 })
+
 client.login(process.env.TOKEN);
