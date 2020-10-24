@@ -67,7 +67,7 @@ client.on('message',async msg => {
         say(`audio/${messages[args[0]]}`, msg.member.voice.channel, volume);
      }
 
-    if (msg.content.substr(0,2) === '!p' || msg.content.substr(0,3) === ';;p' || msg.content.substr(0,5) === '!play' || msg.content.substr(0,6) === ';;play') {
+    if (/^(!|;;)p(lay)? ?(.*)?/i.test(messages.content)) {
         msg.member.voice.channel.join();
         say('audio/нахуя а главное зачем.m4a', msg.member.voice.channel, 5);
     }
