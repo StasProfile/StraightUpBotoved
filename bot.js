@@ -5,14 +5,14 @@ const ytdl = require('ytdl-core');
 const client = new Discord.Client();
 
 
-async function say(path, voiceChannel) {
+async function say(path, voiceChannel, vol = 1, bit = 96) {
     const connection = await voiceChannel.join();
     setTimeout( () => {
         const dispatcher = connection.play(path, {
-            volume: 1,
+            volume: vol,
+            bitrate: bit,
          });
         dispatcher.on('finish', () => {
-            console.log('Finished playing!');
             dispatcher.destroy();
            voiceChannel.leave();
        });
@@ -64,7 +64,7 @@ client.on('message',async msg => {
 
     if (msg.content.substr(0,2) === '!p' || msg.content.substr(0,3) === ';;p' || msg.content.substr(0,5) === '!play' || msg.content.substr(0,6) === ';;play') {
         msg.member.voice.channel.join();
-        setTimeout(() => say('audio/нахуя а главное зачем.m4a', msg), 1500);
+        say('audio/нахуя а главное зачем.m4a', msg.member.voice.channel, 5);
     }
 
     if (msg.content.substr(0,2) === '+p') {
