@@ -1,20 +1,22 @@
 require('dotenv').config();
+
 const Discord = require('discord.js');
 const ytdl = require('ytdl-core');
 const client = new Discord.Client();
 
 
-
-async function say(path, msg) {
-    const connection = await msg.member.voice.channel.join();
-    const dispatcher = connection.play(path, {
-        volume: 1,
-    });
-    dispatcher.on('finish', () => {
-        console.log('Finished playing!');
-        dispatcher.destroy();
-        msg.member.voice.channel.leave();
-    });
+async function say(path, voiceChannel) {
+    const connection = await voiceChannel.join();
+    setTimeout( () => {
+        const dispatcher = connection.play(path, {
+            volume: 1,
+         });
+        dispatcher.on('finish', () => {
+            console.log('Finished playing!');
+            dispatcher.destroy();
+           voiceChannel.leave();
+       });
+    },500);
 }
 
 client.on('ready', () => {
@@ -44,54 +46,25 @@ client.on('message',async msg => {
         msg.member.voice.channel.leave();
     }
 
-    if (msg.content === 'StraightUp') {
-        msg.member.voice.channel.join();
-        setTimeout(() => say('StraightUp.mp3', msg), 1500);
-    }
-    
-    if (msg.content === 'Dope') {
-        msg.member.voice.channel.join();
-        setTimeout(() => say('Dope.mp3', msg), 1500);
-    }
 
-    if (msg.content === 'ItsLit') {
-        msg.member.voice.channel.join();
-        setTimeout(() => say('ItsLit.mp3', msg), 1500);
+     const messages = {
+        'StraightUp': 'StraightUp.mp3',
+        'Dope': 'Dope.mp3',
+        'ItsLit': 'ItsLit.mp3',
+        'LaFlame': 'LaFlame.mp3',
+        'ТВАРЬ': 'ТВАРЬ.mp3',
+        'Добро': 'Добро.m4a',
+        '345': '345.mp3',
+        'минус три': 'минус три.m4a',
+        'гучи': 'гучи.mp3',
      }
-
-    if (msg.content === 'LaFlame') {
-        msg.member.voice.channel.join();
-        setTimeout(() => say('LaFlame.mp3', msg), 1500);
-    }
-
-    if (msg.content === 'ТВАРЬ') {
-        msg.member.voice.channel.join();
-        setTimeout(() => say('ТВАРЬ.mp3', msg), 1500);
-    }
-
-    if (msg.content === 'Добро') {
-        msg.member.voice.channel.join();
-        setTimeout(() => say('Добро.m4a', msg), 1500);
-    }
-
-    if (msg.content === '345') {
-        msg.member.voice.channel.join();
-        setTimeout(() => say('345.mp3', msg), 1500);
-    }
-
-    if (msg.content === 'минус три') {
-        msg.member.voice.channel.join();
-        setTimeout(() => say('минус три.m4a', msg), 1500);
-    }
-
-    if (msg.content === 'гучи') {
-        msg.member.voice.channel.join();
-        setTimeout(() => say('гучи.mp3', msg), 1500);
-    }
+     if (messages.hasOwnProperty(msg.content)){
+        say(`audio/${messages[msg.content]}`, msg.member.voice.channel);
+     }
 
     if (msg.content.substr(0,2) === '!p' || msg.content.substr(0,3) === ';;p' || msg.content.substr(0,5) === '!play' || msg.content.substr(0,6) === ';;play') {
         msg.member.voice.channel.join();
-        setTimeout(() => say('нахуя а главное зачем.m4a', msg), 1500);
+        setTimeout(() => say('audio/нахуя а главное зачем.m4a', msg), 1500);
     }
 
     if (msg.content.substr(0,2) === '+p') {
@@ -130,5 +103,4 @@ client.on('message',async msg => {
         }
     }
 })
-
 client.login(process.env.TOKEN);
