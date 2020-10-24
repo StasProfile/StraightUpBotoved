@@ -29,7 +29,7 @@ client.on('message',async msg => {
     }
 
     if (msg.content === 'BoxHelp') {
-        msg.reply('BoxConnect\nBoxDisconnect\nStraightUp\nDope\nItsLit\nLaFlame\nТВАРЬ\nДобро\n345\nминусТри\nгучи\n+p{youtube video link}\n       -pause\n       -resume\n       -stop');
+        msg.reply('BoxConnect\nBoxDisconnect\nStraightUp\nDope\nItsLit\nLaFlame\nТВАРЬ\nДобро\nгадза\nминусТри\nгучи\n+p{youtube video link}\n       -pause\n       -resume\n       -stop');
     }
 
     if (!msg.guild) return;
@@ -54,7 +54,7 @@ client.on('message',async msg => {
         'LaFlame': 'LaFlame.mp3',
         'ТВАРЬ': 'ТВАРЬ.mp3',
         'Добро': 'Добро.m4a',
-        '345': '345.mp3',
+        'гадза': '345.mp3',
         'минусТри': 'минус три.m4a',
         'гучи': 'гучи.mp3',
      }
@@ -64,6 +64,7 @@ client.on('message',async msg => {
      if (messages.hasOwnProperty(args[0])){
         let volume = args[args.indexOf('-v') + 1];
         volume = Number.parseFloat(volume) || 1;
+        console.log(volume);
         say(`audio/${messages[args[0]]}`, msg.member.voice.channel, volume);
      }
 
