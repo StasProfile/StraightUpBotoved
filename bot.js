@@ -68,7 +68,6 @@ client.on('message',async msg => {
      if (messages.hasOwnProperty(args[0])){
         let volume = args[args.indexOf('-v') + 1];
         volume = Number.parseFloat(volume) || 1;
-        console.log(volume);
         say(`audio/${messages[args[0]]}`, msg.member.voice.channel, volume);
      }
 
