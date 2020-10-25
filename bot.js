@@ -29,7 +29,7 @@ client.on('message',async msg => {
     }
 
     if (msg.content === 'BoxHelp') {
-        msg.reply('BoxConnect\nBoxDisconnect\nStraightUp\nDope\nItsLit\nLaFlame\nТВАРЬ\nДобро\nгадза\nминусТри\nгучи\nбарбарики\nкриминал\nбасы\n+p{youtube video link}\n       -pause\n       -resume\n       -stop');
+        msg.reply('\nBoxConnect\nBoxDisconnect\nStraightUp\nDope\nItsLit\nLaFlame\nТВАРЬ\nДобро\nгадза\nминусТри\nгучи\nбарбарики\nкриминал\nбасы\n+p{youtube video link}\n       -pause\n       -resume\n       -stop');
     }
 
     if (!msg.guild) return;
@@ -81,7 +81,10 @@ client.on('message',async msg => {
         const words = msg.content.replace(/ +/g, ' ').trim().split(' ');
         let word = words[words.indexOf('-t') + 1];
         word = Number.parseInt(word) || 0;
-        connection.play(ytdl(msg.content.substring(2), { filter: 'audioonly' }), { seek: word });
+        let volume = args[args.indexOf('-v') + 1];
+        volume = Number.parseFloat(volume) || 1;
+        console.log(volume);
+        connection.play(ytdl(msg.content.substring(2), { filter: 'audioonly'}), { seek: word, volume: volume});
     }
     
     if (msg.content === '-pause') {
