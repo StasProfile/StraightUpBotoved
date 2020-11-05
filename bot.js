@@ -4,7 +4,6 @@ const Discord = require('discord.js');
 const ytdl = require('ytdl-core');
 const client = new Discord.Client();
 
-
 async function say(path, voiceChannel, vol = 1, bit = 96) {
     const connection = await voiceChannel.join();
     setTimeout(() => {
@@ -29,7 +28,7 @@ client.on('message',async msg => {
     }
 
     if (msg.content === 'BoxHelp') {
-        msg.reply('\nBoxConnect\nBoxDisconnect\nStraightUp\nDope\nItsLit\nLaFlame\nТВАРЬ\nДобро\nгадза\nминусТри\nгучи\nбарбарики\nкриминал\nбасы\n+p{youtube video link}\n       -pause\n       -resume\n       -stop');
+        msg.reply('\nBoxConnect\nBoxDisconnect\nStraightUp\nDope\nItsLit\nLaFlame\nТВАРЬ\nДобро\nгадза\nминусТри\nгучи\nбарбарики\nкриминал\nбасы\n+p{youtube video link}\n       +pause\n       +resume\n       +stop');
     }
 
     if (!msg.guild) return;
@@ -76,7 +75,7 @@ client.on('message',async msg => {
         say('audio/нахуя а главное зачем.m4a', msg.member.voice.channel, 5);
     }
 
-    if (msg.content.substr(0,2) === '+p') {
+    if (msg.content.substr(0,3) === '+p ') {
         const connection = await msg.member.voice.channel.join();
         const words = msg.content.replace(/ +/g, ' ').trim().split(' ');
         let word = words[words.indexOf('-t') + 1];
@@ -84,10 +83,10 @@ client.on('message',async msg => {
         let volume = args[args.indexOf('-v') + 1];
         volume = Number.parseFloat(volume) || 1;
         console.log(volume);
-        connection.play(ytdl(msg.content.substring(2), { filter: 'audioonly'}), { seek: word, volume: volume});
+        connection.play(ytdl(msg.content.substring(2), { filter: 'audioonly'}), {seek: word, volume: volume});
     }
     
-    if (msg.content === '-pause') {
+    if (msg.content === '+pause') {
         const voiceConnection = msg.guild.voice.connection;
 
         if (voiceConnection) {
@@ -97,7 +96,7 @@ client.on('message',async msg => {
         }
     }
 
-    if (msg.content === '-resume') {
+    if (msg.content === '+resume') {
         const voiceConnection = msg.guild.voice.connection;
         if (voiceConnection) {
             if (voiceConnection.dispatcher) {
@@ -106,7 +105,7 @@ client.on('message',async msg => {
         }
     }
 
-    if (msg.content === '-stop') {
+    if (msg.content === '+stop') {
         const voiceConnection = msg.guild.voice.connection;
         if (voiceConnection) {
             if (voiceConnection.dispatcher) {
