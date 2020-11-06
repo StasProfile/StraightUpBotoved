@@ -28,7 +28,7 @@ client.on('message',async msg => {
     }
 
     if (msg.content === 'BoxHelp') {
-        msg.reply('\nBoxConnect\nBoxDisconnect\nStraightUp\nDope\nItsLit\nLaFlame\nТВАРЬ\nДобро\nгадза\nминусТри\nгучи\nбарбарики\nкриминал\nбасы\n+p{youtube video link}\n       +pause\n       +resume\n       +stop');
+        msg.reply('\nBoxConnect\nBoxDisconnect\nStraightUp\nDope\nItsLit\nLaFlame\nТВАРЬ\nДобро\nгадза\nминусТри\nгучи\nбарбарики\nкриминал\nбасы\n+p {youtube video link}\n       +pause\n       +resume\n       +stop');
     }
 
     if (!msg.guild) return;
