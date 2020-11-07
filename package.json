@@ -9,6 +9,7 @@
     "dotenv": "^8.2.0",
     "ffmpeg-static": "^4.2.7",
     "nodemon": "^2.0.6",
+    "socket.io": "^3.0.0",
     "ytdl-core": "^3.4.2"
   },
   "devDependencies": {
