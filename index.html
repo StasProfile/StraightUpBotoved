@@ -7,36 +7,54 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <link rel="stylesheet" href="">
     <title>Пульт</title>
+    <style>
+        #soundLine {
+            width: 200px;
+            height: 10px;
+            margin: 10px;
+        }
+
+        #rangeLine {
+            /* display: flex;
+            position: absolute; */
+            margin: 1px;
+            width: 450px;
+            height: 10px;
+        }
+    </style>
 </head>
 
 <body>
 
+    <p>Название</p>
+    <button id="playButton">Проигрование</button>
+    <div id="soundLine">
+        <input id="rangeLine" type="range" min="0" max="500" value="100">
+    </div>
+
     <div class="container">
         <select id="connect_Channel">
-            <option value="OldTalker">Пожилой разговорник</option>
-            <option value="Team1">Team1</option>
-            <option value="Team2">Team2</option>
+            <option value="312932239904079882">Пожилой разговорник</option>
+            <option value="685591541506637902">Team1</option>
+            <option value="685591542978838606">Team2</option>
         </select>
         <div>
+
             <input id="webSound" type="text" placeholder="Вставьте ссылку">
             <button onclick="webSoundSerch()">Искать</button>
+            Громкость
+            <input id="webVolume" type="number" value="1" placeholder="Введите громкость">
 
             <div>
+
+
                 Звуки
-
-                <button class="soundbutton" name="+respect">+rep</button>
-
                 <button class="soundbutton" name="papich">Папич</button>
-
             </div>
 
             <div>
                 Музыка
-
-                <button class="soundbutton" name="pod-youth-of-the-nation">pod</button>
-
                 <button class="soundbutton" name="Ганвест - Ананасовый сироп">Ананасовый сироп</button>
-
             </div>
 
         </div>
@@ -45,7 +63,45 @@
 
 
     <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
 
+        function webSoundSerch() {
+            let webVolume = document.getElementById('webVolume').value || 1;
+            let webSound = document.getElementById('webSound').value;
+            const rangeLine = document.getElementById('rangeLine');
+
+            if (webSound === '') return alert('Вы ничего не ввели!');
+            socket.emit('sound-serch', webSound, connect_Channel.value, webVolume);
+        }
+
+        rangeLine.onchange = function rangeChange() {
+            console.log(rangeLine.value);
+        }
+
+        playButton.onclick = function newRange() {
+            rangeLine.value = Math.random() * 500;
+        }
+
+        socket.on('audio-time', (streamTime) => {
+            console.log(streamTime+" now")
+            rangeLine.value=streamTime;
+        })
+
+        socket.on('new-song', (duration) => {
+            console.log(duration+" vsego")
+            rangeLine.max=duration;
+        });
+
+        socket.on('now-song', (duration) => {
+            console.log(duration+" vsego")
+            rangeLine.max=duration;
+        });
+
+        socket.on('error', e => {
+            alert('Не правильная ссылка');
+        })
+    </script>
 </body>
 
 </html>

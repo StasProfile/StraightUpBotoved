@@ -1,28 +1,68 @@
 require('dotenv').config();
 
+const express = require('express');
+const app = express();
+const server = require('http').Server(app);
+const io = require('socket.io')(server);
 const Discord = require('discord.js');
 const ytdl = require('ytdl-core');
 const client = new Discord.Client();
+const { getAudioDurationInSeconds } = require('get-audio-duration');
+const YouTube = require("discord-youtube-api");
+// const youtube = new YouTube("google api key");
+let myInterval;
+let durat = 100;
 
-async function say(path, voiceChannel, vol = 1, bit = 96) {
+function audioTime(dispatcher) {
+    if (dispatcher === null) return clearInterval(myInterval);
+    io.emit('audio-time', dispatcher.streamTime);
+}
+
+async function say(path, voiceChannel, vol = 1, seek = 0, bit = 96) {
     const connection = await voiceChannel.join();
-    setTimeout(() => {
+    setTimeout(async () => {
         const dispatcher = connection.play(path, {
             volume: vol,
+            seek: seek,
             bitrate: bit,
-         });
-         dispatcher.on('finish', () => {
+        });
+        const duration = await getAudioDurationInSeconds(path);
+        durat = duration * 1000;
+        
+        io.emit('new-song', durat);
+        myInterval = setInterval(() => { audioTime(dispatcher) }, 1000);
+        dispatcher.on('finish', () => {
+            clearInterval(myInterval);
             dispatcher.destroy();
-           voiceChannel.leave();
-       });
+            voiceChannel.leave();
+        });
     }, 500);
 }
+
+function audioAction(action, channel) {
+    const voiceConnection = client.voice.connections.find(vc => vc.channel.id === channel);
+    if (voiceConnection) {
+        if (voiceConnection.dispatcher) {
+            if (action === "+pause") {
+                clearInterval(myInterval);
+                voiceConnection.dispatcher.pause();
+            } else if (action === "+resume") {
+                myInterval = setInterval(() => { audioTime(voiceConnection.dispatcher) }, 1000);
+                voiceConnection.dispatcher.resume();
+            } else if (action === "+stop") {
+                clearInterval(myInterval);
+                voiceConnection.dispatcher.destroy();
+            }
+        }
+    }
+}
+
 
 client.on('ready', () => {
     console.log('bot is running ' + client.user.tag);
 })
 
-client.on('message',async msg => {
+client.on('message', async msg => {
     if (msg.content === 'ping') {
         msg.reply('pong');
     }
@@ -46,7 +86,7 @@ client.on('message',async msg => {
     }
 
 
-     const messages = {
+    const messages = {
         'StraightUp': 'StraightUp.mp3',
         'Dope': 'Dope.mp3',
         'ItsLit': 'ItsLit.mp3',
@@ -60,59 +100,63 @@ client.on('message',async msg => {
         'криминал': 'криминал.m4a',
         'басы': 'басы.mp3',
         'ашотик': 'ашотик.m4a',
-     }
+    }
 
-     const args = msg.content.replace(/ +/g, ' ').trim().split(' ');
-     
-     if (messages.hasOwnProperty(args[0])){
+    const args = msg.content.replace(/ +/g, ' ').trim().split(' ');
+
+    if (messages.hasOwnProperty(args[0])) {
         let volume = args[args.indexOf('-v') + 1];
         volume = Number.parseFloat(volume) || 1;
         say(`audio/${messages[args[0]]}`, msg.member.voice.channel, volume);
-     }
+    }
 
     if (/^(!|;;)p(lay)? ?(.*)?/i.test(messages.content)) {
         msg.member.voice.channel.join();
         say('audio/нахуя а главное зачем.m4a', msg.member.voice.channel, 5);
     }
 
-    if (msg.content.substr(0,3) === '+p ') {
-        const connection = await msg.member.voice.channel.join();
+    if (msg.content.substr(0, 3) === '+p ') {
+        //const connection = await msg.member.voice.channel.join();
         const words = msg.content.replace(/ +/g, ' ').trim().split(' ');
         let word = words[words.indexOf('-t') + 1];
         word = Number.parseInt(word) || 0;
         let volume = args[args.indexOf('-v') + 1];
         volume = Number.parseFloat(volume) || 1;
         console.log(volume);
-        connection.play(ytdl(msg.content.substring(2), { filter: 'audioonly'}), {seek: word, volume: volume});
+        say(ytdl(msg.content.substring(2), { filter: 'audioonly' }), msg.member.voice.channel, volume, word);
     }
-    
-    if (msg.content === '+pause') {
-        const voiceConnection = msg.guild.voice.connection;
+    //trysearch
+    // if (msg.content.substr(0,3) === '+s ') {
+    //     const connection = await msg.member.voice.channel.join();
+    //     const word = msg.content.substr(2,msg.content.length - 1);
+    //     console.log(word);
+    //     const video = await youtube.searchVideos(word);
+    //     console.log(video.url);
+    //     connection.play(ytdl(video.url, { filter: 'audioonly'}));
+    // }
 
-        if (voiceConnection) {
-            if (voiceConnection.dispatcher) {
-                voiceConnection.dispatcher.pause();
-            }
-        }
+
+    if (msg.content === '+pause') {
+        audioAction(msg.content, msg.member.voice.channel.id);
     }
 
     if (msg.content === '+resume') {
-        const voiceConnection = msg.guild.voice.connection;
-        if (voiceConnection) {
-            if (voiceConnection.dispatcher) {
-                voiceConnection.dispatcher.resume();
-            }
-        }
+        audioAction(msg.content, msg.member.voice.channel.id);
     }
 
     if (msg.content === '+stop') {
-        const voiceConnection = msg.guild.voice.connection;
-        if (voiceConnection) {
-            if (voiceConnection.dispatcher) {
-                voiceConnection.dispatcher.destroy();
-            }
-        }
+        audioAction(msg.content, msg.member.voice.channel.id);
     }
 })
 
 client.login(process.env.TOKEN);
+
+module.exports = {
+    app,
+    server,
+    io,
+    client,
+    say,
+    audioAction,
+    durat
+};
