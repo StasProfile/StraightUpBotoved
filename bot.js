@@ -19,35 +19,41 @@ lastAudio.duration = 100;
 lastAudio.lastTime = 100;
 
 let queue = [];
-let a
+
 function audioTime(dispatcher, seek) {
     io.emit('audio-time', lastAudio.lastTime = dispatcher.streamTime + seek * 1000);
 }
 
 
 
-async function say(path, voiceChannel, vol = 1, seek = 0, bit = 96) {
+async function say(voiceChannel) {
     //console.log(path, "\n\n\n\n\n\n");
+    try {
+        const path = queue[0].url != undefined ? ytdl(queue[0].url, { filter: 'audioonly' }) : queue[0].path;
+    } catch (e) {
+        queue.shift();
+        return console.log("Неправильная песня")
+    }
     const connection = await voiceChannel.join();
     setTimeout(async () => {
         const dispatcher = connection.play(path, {
-            volume: vol,
-            seek: seek,
-            bitrate: bit,
+            volume: queue[0].vol,
+            seek: queue[0].seek,
         });
+
         const duration = await getAudioDurationInSeconds(path);
         lastAudio.duration = duration * 1000;
-
         io.emit('new-song', lastAudio.duration);
         clearInterval(myInterval);
-        myInterval = setInterval(() => { audioTime(dispatcher, seek) }, 1000);
+        myInterval = setInterval(() => { audioTime(dispatcher, queue[0].seek) }, 1000);
+
         dispatcher.on('finish', () => {
             queue.shift();
             // console.log(queue);
             clearInterval(myInterval);
             if (queue[0] != undefined) {
-                const words = queue[0].replace(/ +/g, ' ').trim().split(' ');
-                say(ytdl(words[0], { filter: 'audioonly' }), voiceChannel, vol, seek);
+                dispatcher.destroy();
+                say(voiceChannel);
             } else {
                 dispatcher.destroy();
                 voiceChannel.leave();
@@ -127,9 +133,19 @@ client.on('message', async msg => {
 
 
     if (messages.hasOwnProperty(args[0])) {
-        let volume = args[args.indexOf('-v') + 1];
-        volume = Number.parseFloat(volume) || 1;
-        say(`audio/${messages[args[0]]}`, msg.member.voice.channel, volume);
+        if (queue[0] === undefined) {
+            let volume = args[args.indexOf('-v') + 1];
+            volume = Number.parseFloat(volume) || 1;
+            queue.push({
+                path: `audio/${messages[args[0]]}`,
+                vol: volume,
+                seek: 0
+            });
+            say(msg.member.voice.channel);
+        }
+        else {
+            msg.reply('Не мешай слушать музыку или Валакаса, ч0рт!)');
+        }
     }
 
     if (/^(!|;;)p(lay)? ?(.*)?/i.test(messages.content)) {
@@ -144,17 +160,23 @@ client.on('message', async msg => {
         word = Number.parseInt(word) || 0;
         let volume = args[args.indexOf('-v') + 1];
         volume = Number.parseFloat(volume) || 1;
-
         // console.log(volume);
         if (queue[0] === undefined) {
             // console.log(queue[0])
-            queue.push(msg.content.substr(3));
+            queue.push({
+                url: words[1],
+                vol: volume,
+                seek: word
+            });
             // console.log(queue[0])
-            say(ytdl(msg.content.substr(3), { filter: 'audioonly' }), msg.member.voice.channel, volume, word);
+            say(msg.member.voice.channel);
         }
         else {
-            console.log('Bilo')
-            queue.push(msg.content.substr(3));
+            queue.push({
+                url: words[1],
+                vol: volume,
+                seek: word
+            });
         }
     }
     //trysearch
@@ -182,6 +204,19 @@ client.on('message', async msg => {
 
     if (msg.content === '+stop') {
         audioAction(msg.content, msg.member.voice.channel.id);
+    }
+
+    if (msg.content === '+skip') {
+        const voiceConnection = msg.guild.voice.connection;
+        if (voiceConnection) {
+            if (voiceConnection.dispatcher) {
+                voiceConnection.dispatcher.destroy();
+                queue.shift();
+                if (queue[0] !== undefined) {
+                    say(msg.member.voice.channel);
+                }
+            }
+        }
     }
 })
 
