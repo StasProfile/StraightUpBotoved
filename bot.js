@@ -6,19 +6,28 @@ const server = require('http').Server(app);
 const io = require('socket.io')(server);
 const Discord = require('discord.js');
 const ytdl = require('ytdl-core');
+const lodashClonedeep = require("lodash.clonedeep");
 const client = new Discord.Client();
 const { getAudioDurationInSeconds } = require('get-audio-duration');
 const YouTube = require("discord-youtube-api");
-// const youtube = new YouTube("google api key");
-let myInterval;
-let durat = 100;
+const youtube = new YouTube(process.env.KEY);
 
-function audioTime(dispatcher) {
-    if (dispatcher === null) return clearInterval(myInterval);
-    io.emit('audio-time', dispatcher.streamTime);
+let myInterval;
+let lastAudio = {}
+lastAudio.audio = null;
+lastAudio.duration = 100;
+lastAudio.lastTime = 100;
+
+let queue = [];
+let a
+function audioTime(dispatcher, seek) {
+    io.emit('audio-time', lastAudio.lastTime = dispatcher.streamTime + seek * 1000);
 }
 
+
+
 async function say(path, voiceChannel, vol = 1, seek = 0, bit = 96) {
+    //console.log(path, "\n\n\n\n\n\n");
     const connection = await voiceChannel.join();
     setTimeout(async () => {
         const dispatcher = connection.play(path, {
@@ -27,17 +36,26 @@ async function say(path, voiceChannel, vol = 1, seek = 0, bit = 96) {
             bitrate: bit,
         });
         const duration = await getAudioDurationInSeconds(path);
-        durat = duration * 1000;
-        
-        io.emit('new-song', durat);
-        myInterval = setInterval(() => { audioTime(dispatcher) }, 1000);
+        lastAudio.duration = duration * 1000;
+
+        io.emit('new-song', lastAudio.duration);
+        clearInterval(myInterval);
+        myInterval = setInterval(() => { audioTime(dispatcher, seek) }, 1000);
         dispatcher.on('finish', () => {
+            queue.shift();
+            // console.log(queue);
             clearInterval(myInterval);
-            dispatcher.destroy();
-            voiceChannel.leave();
+            if (queue[0] != undefined) {
+                const words = queue[0].replace(/ +/g, ' ').trim().split(' ');
+                say(ytdl(words[0], { filter: 'audioonly' }), voiceChannel, vol, seek);
+            } else {
+                dispatcher.destroy();
+                voiceChannel.leave();
+            }
         });
     }, 500);
 }
+
 
 function audioAction(action, channel) {
     const voiceConnection = client.voice.connections.find(vc => vc.channel.id === channel);
@@ -102,7 +120,11 @@ client.on('message', async msg => {
         'ашотик': 'ашотик.m4a',
     }
 
+
+
     const args = msg.content.replace(/ +/g, ' ').trim().split(' ');
+
+
 
     if (messages.hasOwnProperty(args[0])) {
         let volume = args[args.indexOf('-v') + 1];
@@ -122,18 +144,32 @@ client.on('message', async msg => {
         word = Number.parseInt(word) || 0;
         let volume = args[args.indexOf('-v') + 1];
         volume = Number.parseFloat(volume) || 1;
-        console.log(volume);
-        say(ytdl(msg.content.substring(2), { filter: 'audioonly' }), msg.member.voice.channel, volume, word);
+
+        // console.log(volume);
+        if (queue[0] === undefined) {
+            // console.log(queue[0])
+            queue.push(msg.content.substr(3));
+            // console.log(queue[0])
+            say(ytdl(msg.content.substr(3), { filter: 'audioonly' }), msg.member.voice.channel, volume, word);
+        }
+        else {
+            console.log('Bilo')
+            queue.push(msg.content.substr(3));
+        }
     }
     //trysearch
-    // if (msg.content.substr(0,3) === '+s ') {
-    //     const connection = await msg.member.voice.channel.join();
-    //     const word = msg.content.substr(2,msg.content.length - 1);
-    //     console.log(word);
-    //     const video = await youtube.searchVideos(word);
-    //     console.log(video.url);
-    //     connection.play(ytdl(video.url, { filter: 'audioonly'}));
-    // }
+    if (msg.content.substr(0, 3) === '+s ') {
+        const connection = await msg.member.voice.channel.join();
+        const word = msg.content.substr(3);
+        try {
+            const video = await youtube.searchVideos(word);
+            say(ytdl(video.url, { filter: 'audioonly' }), msg.member.voice.channel, volume, seek);
+        }
+        catch (exception) {
+            msg.reply('Sorry, can\'t find this video :(');
+            msg.member.voice.channel.leave();
+        }
+    }
 
 
     if (msg.content === '+pause') {
@@ -158,5 +194,5 @@ module.exports = {
     client,
     say,
     audioAction,
-    durat
+    lastAudio
 };
