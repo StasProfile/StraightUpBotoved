@@ -8,9 +8,8 @@
     <link rel="stylesheet" href="">
     <title>Пульт</title>
     <style>
-        #soundLine {
-            width: 200px;
-            height: 10px;
+        #soundBar {
+            display: none;
             margin: 10px;
         }
 
@@ -26,10 +25,10 @@
 
 <body>
 
-    <p>Название</p>
-    <button id="playButton">Проигрование</button>
-    <div id="soundLine">
-        <input id="rangeLine" type="range" min="0" max="500" value="100">
+    <div id="soundBar">
+        <p>Название</p>
+        <button id="playButton">Проигрование</button>
+        <input id="rangeLine" type="range" min="0" max="0" value="0">
     </div>
 
     <div class="container">
@@ -77,7 +76,7 @@
 
         rangeLine.onchange = function rangeChange() {
             console.log(rangeLine.value);
-            //socket.emit('new-time-of-song',rangeLine.value/1000);
+            socket.emit('new-time-of-song',rangeLine.value/1000);
         }
 
         playButton.onclick = function newRange() {
@@ -90,19 +89,25 @@
         })
 
         socket.on('new-song', (duration) => {
+            soundBar.style.display = "block";
             console.log(duration+" vsego")
             rangeLine.max=duration;
         });
 
         socket.on('now-song', (duration, lastTime) => {
+            soundBar.style.display = "block";
             console.log(duration+" vsego");
             rangeLine.value=lastTime;
             rangeLine.max=duration;
         });
 
         socket.on('error', e => {
-            alert('Не правильная ссылка');
+            alert('Неправильная ссылка');
         })
+
+        socket.on('end-sining', () =>{
+            soundBar.style.display = "none";
+        });
     </script>
 </body>
 

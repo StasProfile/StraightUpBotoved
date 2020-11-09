@@ -16,6 +16,7 @@
     "lodash.clonedeep": "^4.5.0",
     "nodemon": "^2.0.6",
     "socket.io": "^3.0.0",
+    "youtube-search": "^1.1.4",
     "ytdl-core": "^3.4.2"
   },
   "devDependencies": {

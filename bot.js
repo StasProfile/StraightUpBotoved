@@ -9,14 +9,15 @@ const ytdl = require('ytdl-core');
 const lodashClonedeep = require("lodash.clonedeep");
 const client = new Discord.Client();
 const { getAudioDurationInSeconds } = require('get-audio-duration');
-const YouTube = require("discord-youtube-api");
-const youtube = new YouTube(process.env.KEY);
+//const YouTube = require("discord-youtube-api");
+//const youtube = new YouTube(process.env.KEY);
+
+const search = require('youtube-search');
 
 let myInterval;
 let lastAudio = {}
-lastAudio.audio = null;
-lastAudio.duration = 100;
-lastAudio.lastTime = 100;
+lastAudio.duration = 0;
+lastAudio.lastTime = 0;
 
 let queue = [];
 
@@ -25,37 +26,51 @@ function audioTime(dispatcher, seek) {
 }
 
 
+const opts = {
+    maxResults: 1,
+    key: process.env.KEY
+};
 
-async function say(voiceChannel) {
-    //console.log(path, "\n\n\n\n\n\n");
+
+
+async function say(voiceChannel, sendChannel = undefined) {
+    clearInterval(myInterval);
+    let path;
     try {
-        const path = queue[0].url != undefined ? ytdl(queue[0].url, { filter: 'audioonly' }) : queue[0].path;
+        path = queue[0].url != undefined ? ytdl(queue[0].url, { filter: 'audioonly' }) : queue[0].path;
     } catch (e) {
         queue.shift();
-        return console.log("Неправильная песня")
+        console.log(e)
+        sendChannel != undefined ? sendChannel.send("Неправильная ссылка") : io.emit('error', e);
+        if (queue[0] != undefined) {
+            return say(voiceChannel, sendChannel)
+        } else {
+            lastAudio.channel = null;
+            io.emit('end-sining');
+            return voiceChannel.leave();
+        }
     }
+    lastAudio.channel = voiceChannel;
     const connection = await voiceChannel.join();
+
     setTimeout(async () => {
         const dispatcher = connection.play(path, {
             volume: queue[0].vol,
             seek: queue[0].seek,
         });
-
         const duration = await getAudioDurationInSeconds(path);
         lastAudio.duration = duration * 1000;
-        io.emit('new-song', lastAudio.duration);
-        clearInterval(myInterval);
         myInterval = setInterval(() => { audioTime(dispatcher, queue[0].seek) }, 1000);
+        io.emit('new-song', lastAudio.duration);
 
         dispatcher.on('finish', () => {
             queue.shift();
-            // console.log(queue);
             clearInterval(myInterval);
+            dispatcher.destroy();
             if (queue[0] != undefined) {
-                dispatcher.destroy();
-                say(voiceChannel);
+                say(voiceChannel, sendChannel)
             } else {
-                dispatcher.destroy();
+                lastAudio.channel = null;
                 voiceChannel.leave();
             }
         });
@@ -75,7 +90,9 @@ function audioAction(action, channel) {
                 voiceConnection.dispatcher.resume();
             } else if (action === "+stop") {
                 clearInterval(myInterval);
+                queue = [];
                 voiceConnection.dispatcher.destroy();
+                voiceChannel.leave();
             }
         }
     }
@@ -87,12 +104,10 @@ client.on('ready', () => {
 })
 
 client.on('message', async msg => {
-    if (msg.content === 'ping') {
-        msg.reply('pong');
-    }
+
 
     if (msg.content === 'BoxHelp') {
-        msg.reply('\nBoxConnect\nBoxDisconnect\nStraightUp\nDope\nItsLit\nLaFlame\nТВАРЬ\nДобро\nгадза\nминусТри\nгучи\nбарбарики\nкриминал\nбасы\n+p {youtube video link}\n       +pause\n       +resume\n       +stop');
+        msg.reply('\nBoxConnect\nBoxDisconnect\nStraightUp\nDope\nItsLit\nLaFlame\nТВАРЬ\nДобро\nгадза\nминусТри\nгучи\nбарбарики\nкриминал\nбасы\n+p {youtube video link}/ +s {youtube video keywoard}\n       +pause\n       +resume\n       +stop\n       +skip');
     }
 
     if (!msg.guild) return;
@@ -148,10 +163,10 @@ client.on('message', async msg => {
         }
     }
 
-    if (/^(!|;;)p(lay)? ?(.*)?/i.test(messages.content)) {
-        msg.member.voice.channel.join();
-        say('audio/нахуя а главное зачем.m4a', msg.member.voice.channel, 5);
-    }
+    // if (/^(!|;;)p(lay)? ?(.*)?/i.test(messages.content)) {
+    //     msg.member.voice.channel.join();
+    //     say('audio/нахуя а главное зачем.m4a', msg.member.voice.channel, 5);
+    // }
 
     if (msg.content.substr(0, 3) === '+p ') {
         //const connection = await msg.member.voice.channel.join();
@@ -161,63 +176,60 @@ client.on('message', async msg => {
         let volume = args[args.indexOf('-v') + 1];
         volume = Number.parseFloat(volume) || 1;
         // console.log(volume);
-        if (queue[0] === undefined) {
-            // console.log(queue[0])
+        if (msg.content.substr(3, 6) === 'http') {
             queue.push({
                 url: words[1],
                 vol: volume,
                 seek: word
             });
-            // console.log(queue[0])
-            say(msg.member.voice.channel);
-        }
+            if (queue[1] === undefined) {
+                say(msg.member.voice.channel, msg.channel);
+            }
+        } 
         else {
-            queue.push({
-                url: words[1],
-                vol: volume,
-                seek: word
+            const word = msg.content.substr(3);
+            await search(word, opts, function (err, results) {
+                if (err) return msg.reply('Sorry, can\'t find this video :(');
+                // console.dir(results);
+                console.log(results[0].link);
+                queue.push({
+                    url: results[0].link,
+                    vol: 1,
+                    seek: 0
+                });
+                if (queue[1] === undefined) {
+                    say(msg.member.voice.channel, msg.channel);
+                }
             });
         }
     }
-    //trysearch
-    if (msg.content.substr(0, 3) === '+s ') {
-        const connection = await msg.member.voice.channel.join();
-        const word = msg.content.substr(3);
-        try {
-            const video = await youtube.searchVideos(word);
-            say(ytdl(video.url, { filter: 'audioonly' }), msg.member.voice.channel, volume, seek);
-        }
-        catch (exception) {
-            msg.reply('Sorry, can\'t find this video :(');
-            msg.member.voice.channel.leave();
-        }
-    }
-
 
     if (msg.content === '+pause') {
-        audioAction(msg.content, msg.member.voice.channel.id);
-    }
+    audioAction(msg.content, msg.member.voice.channel.id);
+}
 
-    if (msg.content === '+resume') {
-        audioAction(msg.content, msg.member.voice.channel.id);
-    }
+if (msg.content === '+resume') {
+    audioAction(msg.content, msg.member.voice.channel.id);
+}
 
-    if (msg.content === '+stop') {
-        audioAction(msg.content, msg.member.voice.channel.id);
-    }
+if (msg.content === '+stop') {
+    audioAction(msg.content, msg.member.voice.channel.id);
+}
 
-    if (msg.content === '+skip') {
-        const voiceConnection = msg.guild.voice.connection;
-        if (voiceConnection) {
-            if (voiceConnection.dispatcher) {
-                voiceConnection.dispatcher.destroy();
-                queue.shift();
-                if (queue[0] !== undefined) {
-                    say(msg.member.voice.channel);
-                }
+if (msg.content === '+skip') {
+    const voiceConnection = msg.guild.voice.connection;
+    if (voiceConnection) {
+        if (voiceConnection.dispatcher) {
+            clearInterval(myInterval);
+            voiceConnection.dispatcher.destroy();
+            queue.shift();
+            console.log(queue);
+            if (queue[0] !== undefined) {
+                say(msg.member.voice.channel, msg.channel);
             }
         }
     }
+}
 })
 
 client.login(process.env.TOKEN);
@@ -229,5 +241,6 @@ module.exports = {
     client,
     say,
     audioAction,
-    lastAudio
+    lastAudio,
+    queue
 };
